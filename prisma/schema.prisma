@@ -1,0 +1,62 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+}
+
+model Usuario {
+  id           String   @id @default(cuid())
+  email        String   @unique
+  passwordHash String
+  nombre       String
+  creado       DateTime @default(now())
+}
+
+model Vendedor {
+  id          String       @id @default(cuid())
+  nombre      String
+  apellido    String
+  telefono    String
+  propiedades Propiedad[]
+}
+
+model Propiedad {
+  id               String   @id @default(cuid())
+  titulo           String
+  descripcion      String
+  precio           Int
+  habitaciones     Int
+  wc               Int
+  estacionamiento  Int
+  imagen           String
+  creado           DateTime @default(now())
+  vendedor         Vendedor @relation(fields: [vendedorId], references: [id])
+  vendedorId       String
+}
+
+model Entrada {
+  id          String   @id @default(cuid())
+  titulo      String
+  slug        String   @unique
+  contenido   String
+  imagen      String
+  autor       String
+  publicado   Boolean  @default(true)
+  creado      DateTime @default(now())
+}
+
+model Mensaje {
+  id                   String    @id @default(cuid())
+  nombre               String
+  email                String
+  telefono             String
+  mensaje              String
+  tipo                 String
+  presupuesto          Int?
+  preferenciaContacto  String
+  fechaCita            String?
+  horaCita             String?
+  creado               DateTime  @default(now())
+}

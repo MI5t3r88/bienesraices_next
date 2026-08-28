@@ -1,26 +1,129 @@
 @import "tailwindcss";
 
+/*
+  Proyecto viejo fija html{font-size:62.5%} => 1rem = 10px.
+  Aqui NO se replica ese truco: cada valor ya viene convertido a px
+  directo desde src/scss/base/_variables.scss del proyecto original.
+*/
+@theme {
+  --color-negro: #000000;
+  --color-amarillo: #e08709;
+  --color-verde: #71b100;
+  --color-blanco: #ffffff;
+  --color-gris: #e1e1e1;
+  --color-gris-oscuro: #333333;
+  /* darken($gris-oscuro, 10) del proyecto original: fondo del modo oscuro */
+  --color-gris-profundo: #1a1a1a;
+
+  --font-sans: var(--font-lato), sans-serif;
+
+  --breakpoint-xs: 480px;
+  /* tablet 768px = md, desktop 1024px = lg (coinciden con default Tailwind) */
+
+  --spacing-separacion: 50px;
+
+  --text-h1: 38px;
+  --text-h1--line-height: 1.3;
+  --text-h2: 34px;
+  --text-h2--line-height: 1.3;
+  --text-h3: 30px;
+  --text-h3--line-height: 1.3;
+  --text-h4: 26px;
+  --text-h4--line-height: 1.3;
+  --text-parrafo: 20px;
+  --text-parrafo--line-height: 1.8;
+}
+
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --color-scheme: light;
 }
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+.dark {
+  --color-scheme: dark;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+/*
+  html/body y .contenedor van dentro de capas Tailwind (base/components)
+  a proposito: en Tailwind v4 el CSS sin capa siempre gana sobre el CSS
+  con capa, sea cual sea su especificidad. Sin esto, una utilidad como
+  max-w-[800px] jamas podria vencer a .contenedor.
+*/
+@layer base {
+  html {
+    color-scheme: var(--color-scheme);
+  }
+
+  body {
+    @apply bg-blanco text-negro dark:bg-gris-profundo;
+    font-family: var(--font-sans);
+    font-size: 16px;
+    line-height: 1.8;
+  }
+
+  /*
+    Igual que _darkMode.scss del proyecto original: el modo oscuro
+    recolorea p/encabezados por cascada. Un elemento con color
+    explicito (className con text-*) siempre gana por especificidad,
+    asi que sitios como el precio verde o el header/footer (siempre
+    gris-oscuro) no se ven afectados por estas reglas base.
+  */
+  p {
+    @apply dark:text-blanco;
+  }
+  h1,
+  h2,
+  h3,
+  h4 {
+    @apply dark:text-gris;
+  }
+  h1,
+  h2,
+  h3 {
+    @apply text-center font-light;
   }
 }
 
-body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+@layer components {
+  .contenedor {
+    width: 95%;
+    max-width: 1200px;
+    margin-inline: auto;
+  }
+
+  /* Equivalente al mixin boton() de src/scss/base/_mixins.scss */
+  .boton-amarillo,
+  .boton-amarillo-block {
+    @apply inline-block cursor-pointer border-0 px-[30px] py-[10px] text-center font-bold text-blanco no-underline transition-colors mt-[25px] bg-amarillo hover:bg-[#c97908];
+  }
+  .boton-amarillo-block {
+    @apply block;
+  }
+  .boton-verde {
+    @apply inline-block cursor-pointer border-0 px-[30px] py-[10px] text-center font-bold text-blanco no-underline transition-colors mt-[25px] bg-verde hover:bg-[#649c00];
+  }
+
+  /* Equivalente a src/scss/layout/_formularios.scss */
+  .formulario p {
+    @apply my-4 mt-8 text-sm text-gris-oscuro first:mt-0 dark:text-gris;
+  }
+  .formulario legend {
+    @apply text-xl text-gris-oscuro dark:text-gris;
+  }
+  .formulario label {
+    @apply block font-bold uppercase;
+  }
+  .formulario input:not([type="submit"]):not([type="radio"]),
+  .formulario textarea,
+  .formulario select {
+    @apply mb-4 block w-full rounded-xl border border-gris bg-blanco p-4 dark:border-gris-oscuro dark:bg-gris-oscuro dark:text-blanco;
+  }
+  .formulario textarea {
+    @apply h-52;
+  }
+  .formulario .forma-contacto {
+    @apply flex max-w-[300px] items-center justify-between;
+  }
+  .formulario input[type="radio"] {
+    @apply m-0 w-auto;
+  }
 }

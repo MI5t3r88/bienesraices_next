@@ -1,36 +1,74 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Bienes Raices (Next.js)
 
-## Getting Started
+Migracion a Next.js 16 (App Router) + TypeScript + Tailwind CSS v4 + Prisma
+del sitio estatico original en `bienesraices_PHP/`. Agrega lo que ese
+proyecto no tenia: base de datos, panel de administracion con login y
+formulario de contacto funcional.
 
-First, run the development server:
+## Arranque en local
 
 ```bash
+npm install
+npx prisma migrate dev   # crea prisma/dev.db y aplica el esquema
+npx prisma db seed       # carga propiedades, entradas de blog y el admin
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Abre [http://localhost:3000](http://localhost:3000).
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+Copia `.env.example` a `.env` antes de instalar si vas a cambiar algun
+valor (usuario admin, claves, etc.). El repo ya trae un `.env` de
+desarrollo funcional con datos de prueba.
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+### Usuario administrador (seed)
 
-## Learn More
+- URL: `/admin/login`
+- Correo: valor de `ADMIN_EMAIL` en `.env` (por defecto `admin@bienesraices.test`)
+- Contraseña: valor de `ADMIN_PASSWORD` en `.env` (por defecto `bienesraices123`)
 
-To learn more about Next.js, take a look at the following resources:
+Cambia `ADMIN_PASSWORD` antes de correr el seed en cualquier entorno que
+no sea tu maquina local.
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## Scripts
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+| Comando | Que hace |
+|---|---|
+| `npm run dev` | Servidor de desarrollo |
+| `npm run build` | Build de produccion |
+| `npm run start` | Sirve el build de produccion |
+| `npm run lint` | ESLint |
+| `npm run db:migrate` | `prisma migrate dev` |
+| `npm run db:seed` | `prisma db seed` |
+| `npm run db:studio` | Explorador visual de la base de datos |
 
-## Deploy on Vercel
+## Variables de entorno
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+Ver `.env.example` para la lista completa. Las relevantes para produccion:
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+- `DATABASE_URL` — cambiar de SQLite a Postgres (u otro motor soportado
+  por Prisma) agregando el adapter correspondiente en `lib/prisma.ts`.
+- `AUTH_SECRET` — generar una nueva con `npx auth secret` para cada
+  entorno; nunca reusar la de desarrollo.
+- `RESEND_API_KEY` / `CONTACTO_EMAIL_DESTINO` — opcionales. Sin
+  `RESEND_API_KEY`, el formulario de contacto sigue funcionando: el
+  mensaje se guarda en la base de datos y solo se omite el correo.
+- `SITE_URL` — usada por `app/sitemap.ts` y `app/robots.ts`.
+
+## Aviso para despliegue en Vercel
+
+`lib/almacenamiento.ts` guarda las imagenes que se suben desde el panel
+en `public/uploads/`. Eso funciona en desarrollo local, pero el
+filesystem de Vercel es de solo lectura en produccion: las imagenes
+subidas ahi **no persistirian**. Antes de desplegar, reemplazar el
+contenido de esa funcion por una subida a Vercel Blob (u otro
+almacenamiento de objetos), manteniendo la misma firma
+`guardarImagen(archivo: File): Promise<string>` para no tocar quien la
+llama.
+
+## Estructura
+
+- `app/(site)/` — paginas publicas (inicio, nosotros, anuncios, blog, contacto).
+- `app/(admin)/admin/` — `login/` (publica) y `(panel)/` (protegida por `middleware.ts`).
+- `components/` — UI compartida (header, footer, tarjetas, formularios).
+- `lib/` — Prisma, Auth.js, validaciones Zod, correo, almacenamiento de imagenes.
+- `prisma/` — esquema, migraciones y seed.

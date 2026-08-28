@@ -1,18 +1,11 @@
-import { auth } from "@/lib/auth";
+import NextAuth from "next-auth";
+import { authConfig } from "@/lib/auth.config";
 
-export default auth((req) => {
-  const estaLogueado = !!req.auth;
-  const { pathname } = req.nextUrl;
-  const esLogin = pathname === "/admin/login";
+// Instancia "edge-safe": solo lee la cookie de sesion, no importa
+// providers (ver comentario en lib/auth.config.ts).
+export const { auth: middleware } = NextAuth(authConfig);
 
-  if (pathname.startsWith("/admin") && !esLogin && !estaLogueado) {
-    return Response.redirect(new URL("/admin/login", req.nextUrl));
-  }
-
-  if (esLogin && estaLogueado) {
-    return Response.redirect(new URL("/admin", req.nextUrl));
-  }
-});
+export default middleware;
 
 export const config = {
   matcher: ["/admin/:path*"],

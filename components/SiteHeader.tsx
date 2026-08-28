@@ -22,7 +22,12 @@ export function SiteHeader({
   const { resolvedTheme, setTheme } = useTheme();
   const [montado, setMontado] = useState(false);
 
-  useEffect(() => setMontado(true), []);
+  // Patron recomendado por next-themes para evitar mismatch de hidratacion:
+  // el icono de tema solo puede pintarse una vez el cliente sabe el tema real.
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setMontado(true);
+  }, []);
 
   const esInicio = variante === "inicio";
 

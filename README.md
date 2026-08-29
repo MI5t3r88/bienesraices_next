@@ -9,16 +9,19 @@ formulario de contacto funcional.
 
 ```bash
 npm install
-npx prisma migrate dev   # crea prisma/dev.db y aplica el esquema
+cp .env.example .env     # o copia manual en Windows; ver variables abajo
+npx auth secret          # genera y agrega AUTH_SECRET a .env
+npx prisma migrate dev   # crea dev.db en la raiz del repo y aplica el esquema
 npx prisma db seed       # carga propiedades, entradas de blog y el admin
 npm run dev
 ```
 
 Abre [http://localhost:3000](http://localhost:3000).
 
-Copia `.env.example` a `.env` antes de instalar si vas a cambiar algun
-valor (usuario admin, claves, etc.). El repo ya trae un `.env` de
-desarrollo funcional con datos de prueba.
+El `.env` **no** viene en el repo (esta en `.gitignore`, solo `.env.example`
+esta versionado): hay que crearlo copiando `.env.example` y generando un
+`AUTH_SECRET` propio antes de levantar el proyecto. Sin esos dos pasos el
+login no funciona.
 
 ### Usuario administrador (seed)
 

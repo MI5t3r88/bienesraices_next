@@ -4,7 +4,8 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { propiedadSchema } from "@/lib/validaciones";
-import { guardarImagen } from "@/lib/almacenamiento";
+import { guardarImagen, borrarImagen, ImagenInvalidaError } from "@/lib/almacenamiento";
+import { exigirSesion } from "@/lib/auth";
 
 export type EstadoPropiedad = {
   success: boolean;
@@ -31,7 +32,17 @@ async function procesarFormulario(formData: FormData): Promise<
   const archivo = formData.get("imagen");
   let imagen: string | undefined;
   if (archivo instanceof File && archivo.size > 0) {
-    imagen = await guardarImagen(archivo);
+    try {
+      imagen = await guardarImagen(archivo);
+    } catch (error) {
+      if (error instanceof ImagenInvalidaError) {
+        return {
+          ok: false,
+          estado: { success: false, errores: { imagen: error.message }, message: "Revisa los campos marcados." },
+        };
+      }
+      throw error;
+    }
   }
 
   return { ok: true, datos: resultado.data, imagen };
@@ -41,6 +52,8 @@ export async function crearPropiedad(
   _estadoPrevio: EstadoPropiedad,
   formData: FormData
 ): Promise<EstadoPropiedad> {
+  await exigirSesion();
+
   const resultado = await procesarFormulario(formData);
   if (!resultado.ok) return resultado.estado;
 
@@ -66,8 +79,12 @@ export async function actualizarPropiedad(
   _estadoPrevio: EstadoPropiedad,
   formData: FormData
 ): Promise<EstadoPropiedad> {
+  await exigirSesion();
+
   const resultado = await procesarFormulario(formData);
   if (!resultado.ok) return resultado.estado;
+
+  const anterior = await prisma.propiedad.findUnique({ where: { id }, select: { imagen: true } });
 
   await prisma.propiedad.update({
     where: { id },
@@ -77,6 +94,10 @@ export async function actualizarPropiedad(
     },
   });
 
+  if (resultado.imagen && anterior) {
+    await borrarImagen(anterior.imagen);
+  }
+
   revalidatePath("/admin");
   revalidatePath("/anuncios");
   revalidatePath(`/anuncios/${id}`);
@@ -85,7 +106,11 @@ export async function actualizarPropiedad(
 }
 
 export async function borrarPropiedad(id: string) {
-  await prisma.propiedad.delete({ where: { id } });
+  await exigirSesion();
+
+  const propiedad = await prisma.propiedad.delete({ where: { id } });
+  await borrarImagen(propiedad.imagen);
+
   revalidatePath("/admin");
   revalidatePath("/anuncios");
   redirect("/admin");

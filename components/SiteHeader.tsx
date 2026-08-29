@@ -67,7 +67,7 @@ export function SiteHeader({
           <div className="flex flex-col items-center gap-4 md:flex-row md:items-center">
             <button
               type="button"
-              aria-label="Cambiar modo oscuro"
+              aria-label={resolvedTheme === "dark" ? "Activar modo claro" : "Activar modo oscuro"}
               className="invert cursor-pointer"
               onClick={() => setTheme(resolvedTheme === "dark" ? "light" : "dark")}
             >

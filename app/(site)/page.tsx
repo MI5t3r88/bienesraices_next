@@ -1,6 +1,6 @@
 import Image from "next/image";
 import Link from "next/link";
-import { SiteHeader } from "@/components/SiteHeader";
+import { SiteHeader, ID_SECCION_NOSOTROS } from "@/components/SiteHeader";
 import { TarjetaAnuncio } from "@/components/TarjetaAnuncio";
 import { EntradaBlogCard } from "@/components/EntradaBlogCard";
 import { prisma } from "@/lib/prisma";
@@ -36,7 +36,7 @@ export default async function InicioPage() {
     <>
       <SiteHeader variante="inicio" titulo="Venta de Casas y Departamentos Exclusivos de Lujo" />
 
-      <div className="contenedor py-separacion">
+      <div id={ID_SECCION_NOSOTROS} className="contenedor py-separacion">
         <h1 className="text-h1">Mas Sobre Nosotros</h1>
 
         <div className="md:grid md:grid-cols-3 md:gap-8">

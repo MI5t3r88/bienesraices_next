@@ -65,12 +65,23 @@ export async function crearPropiedad(
     };
   }
 
-  const propiedad = await prisma.propiedad.create({
-    data: { ...resultado.datos, imagen: resultado.imagen },
-  });
+  let propiedad;
+  try {
+    propiedad = await prisma.propiedad.create({
+      data: { ...resultado.datos, imagen: resultado.imagen },
+    });
+  } catch (error) {
+    // La imagen ya se escribio a disco antes del create; si la escritura
+    // en base de datos falla (ej. vendedorId invalido) no debe quedar
+    // huerfana en public/uploads.
+    await borrarImagen(resultado.imagen);
+    throw error;
+  }
 
+  revalidatePath("/");
   revalidatePath("/admin");
   revalidatePath("/anuncios");
+  revalidatePath("/sitemap.xml");
   redirect(`/admin/propiedades/${propiedad.id}/editar?creada=1`);
 }
 
@@ -86,21 +97,32 @@ export async function actualizarPropiedad(
 
   const anterior = await prisma.propiedad.findUnique({ where: { id }, select: { imagen: true } });
 
-  await prisma.propiedad.update({
-    where: { id },
-    data: {
-      ...resultado.datos,
-      ...(resultado.imagen ? { imagen: resultado.imagen } : {}),
-    },
-  });
+  try {
+    await prisma.propiedad.update({
+      where: { id },
+      data: {
+        ...resultado.datos,
+        ...(resultado.imagen ? { imagen: resultado.imagen } : {}),
+      },
+    });
+  } catch (error) {
+    // La imagen nueva (si se subio) ya esta en disco; el update fallo,
+    // asi que la propiedad se quedo con la imagen anterior y esta no
+    // debe quedar huerfana en public/uploads.
+    if (resultado.imagen) await borrarImagen(resultado.imagen);
+    throw error;
+  }
 
   if (resultado.imagen && anterior) {
     await borrarImagen(anterior.imagen);
   }
 
+  revalidatePath("/");
   revalidatePath("/admin");
   revalidatePath("/anuncios");
   revalidatePath(`/anuncios/${id}`);
+  revalidatePath(`/admin/propiedades/${id}/editar`);
+  revalidatePath("/sitemap.xml");
 
   return { success: true, message: "Propiedad actualizada." };
 }
@@ -111,7 +133,10 @@ export async function borrarPropiedad(id: string) {
   const propiedad = await prisma.propiedad.delete({ where: { id } });
   await borrarImagen(propiedad.imagen);
 
+  revalidatePath("/");
   revalidatePath("/admin");
   revalidatePath("/anuncios");
+  revalidatePath(`/anuncios/${id}`);
+  revalidatePath("/sitemap.xml");
   redirect("/admin");
 }

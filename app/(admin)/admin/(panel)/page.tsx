@@ -4,19 +4,33 @@ import type { Metadata } from "next";
 import { prisma } from "@/lib/prisma";
 import { formatearPrecio } from "@/lib/formato";
 import { BotonBorrarPropiedad } from "@/components/BotonBorrarPropiedad";
+import { Paginacion } from "@/components/Paginacion";
 
 export const metadata: Metadata = { title: "Panel" };
 
-export default async function AdminDashboardPage() {
-  const propiedades = await prisma.propiedad.findMany({
-    orderBy: { creado: "desc" },
-    include: { vendedor: true },
-  });
+const POR_PAGINA = 20;
+
+type SearchParams = Promise<{ pagina?: string }>;
+
+export default async function AdminDashboardPage({ searchParams }: { searchParams: SearchParams }) {
+  const { pagina } = await searchParams;
+  const paginaActual = Math.max(1, Number(pagina) || 1);
+
+  const [propiedades, total] = await Promise.all([
+    prisma.propiedad.findMany({
+      orderBy: { creado: "desc" },
+      include: { vendedor: true },
+      skip: (paginaActual - 1) * POR_PAGINA,
+      take: POR_PAGINA,
+    }),
+    prisma.propiedad.count(),
+  ]);
+  const totalPaginas = Math.max(1, Math.ceil(total / POR_PAGINA));
 
   return (
     <div>
       <div className="mb-6 flex items-center justify-between">
-        <h1 className="text-h2">Propiedades ({propiedades.length})</h1>
+        <h1 className="text-h2">Propiedades ({total})</h1>
         <Link href="/admin/propiedades/nueva" className="boton-verde">
           + Nueva Propiedad
         </Link>
@@ -42,6 +56,7 @@ export default async function AdminDashboardPage() {
                       src={propiedad.imagen}
                       alt={propiedad.titulo}
                       fill
+                      sizes="64px"
                       className="object-cover"
                     />
                   </div>
@@ -69,6 +84,8 @@ export default async function AdminDashboardPage() {
 
         {propiedades.length === 0 && <p>Aun no hay propiedades. Crea la primera.</p>}
       </div>
+
+      <Paginacion basePath="/admin" paginaActual={paginaActual} totalPaginas={totalPaginas} />
     </div>
   );
 }

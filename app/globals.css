@@ -9,21 +9,6 @@
 @custom-variant dark (&:where(.dark, .dark *));
 
 /*
-  Usado por el indicador circular del slideshow del hero (IndicadoresSlide
-  en components/FondoSlideshow.tsx). Anima stroke-dashoffset en el rango
-  0-1 gracias al atributo SVG pathLength={1} del circle, asi no hace falta
-  calcular la circunferencia real segun el radio elegido.
-*/
-@keyframes llenado-indicador {
-  from {
-    stroke-dashoffset: 1;
-  }
-  to {
-    stroke-dashoffset: 0;
-  }
-}
-
-/*
   Proyecto viejo fija html{font-size:62.5%} => 1rem = 10px.
   Aqui NO se replica ese truco: cada valor ya viene convertido a px
   directo desde src/scss/base/_variables.scss del proyecto original.
@@ -97,7 +82,7 @@
   h2,
   h3,
   h4 {
-    @apply dark:text-gris;
+    @apply dark:text-gris pb-[12px];
   }
   h1,
   h2,

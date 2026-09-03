@@ -28,6 +28,14 @@ export const propiedadSchema = z.object({
 
 export type PropiedadInput = z.infer<typeof propiedadSchema>;
 
+export const vendedorSchema = z.object({
+  nombre: z.string().trim().min(2, "Nombre muy corto"),
+  apellido: z.string().trim().min(2, "Apellido muy corto"),
+  telefono: z.string().trim().min(7, "Telefono invalido"),
+});
+
+export type VendedorInput = z.infer<typeof vendedorSchema>;
+
 export const credencialesSchema = z.object({
   email: z.email("Correo invalido"),
   password: z.string().min(6, "Contraseña muy corta"),

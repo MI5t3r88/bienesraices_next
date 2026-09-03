@@ -10,6 +10,10 @@ export const authConfig: NextAuthConfig = {
   session: { strategy: "jwt" },
   pages: { signIn: "/admin/login" },
   providers: [],
+  // Sin esto, Auth.js rechaza cualquier host que no reconozca como
+  // plataforma conocida (ej. Vercel se autodetecta) con "UntrustedHost".
+  // Necesario para `next start` local y para autohospedar fuera de Vercel.
+  trustHost: true,
   callbacks: {
     authorized({ auth, request: { nextUrl } }) {
       const estaLogueado = !!auth?.user;

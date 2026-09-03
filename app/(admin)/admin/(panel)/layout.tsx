@@ -25,6 +25,9 @@ export default async function PanelLayout({
           <Link href="/admin/mensajes" className="text-blanco no-underline hover:text-verde">
             Mensajes
           </Link>
+          <Link href="/admin/vendedores" className="text-blanco no-underline hover:text-verde">
+            Vendedores
+          </Link>
           <Link href="/" className="text-blanco no-underline hover:text-verde">
             Ver sitio
           </Link>

@@ -2,8 +2,9 @@
 
 import Link from "next/link";
 import { useTheme } from "next-themes";
+import { useSession } from "next-auth/react";
+import { motion } from "framer-motion";
 import { useEffect, useRef, useState } from "react";
-import { FondoSlideshow, IndicadoresSlide, INTERVALO_MS, type ImagenSlide } from "@/components/FondoSlideshow";
 
 const enlaces = [
   { href: "/nosotros", label: "Nosotros" },
@@ -12,11 +13,11 @@ const enlaces = [
   { href: "/contacto", label: "Contacto" },
 ];
 
-// Alto de la barra fija: contrato compartido con el espaciador de las
-// paginas internas y el padding-top del hero (pt-[72px] mas abajo). Los
-// tres deben cambiar juntos. ALTO_BARRA es literal a proposito: Tailwind
-// v4 detecta clases escaneando el archivo como texto, no evaluando JS, asi
-// que un template string interpolado no generaria la utilidad h-[72px].
+// Alto de la barra fija: contrato compartido con el padding-top del hero
+// (pt-[72px] mas abajo) y el spacer de las paginas internas. Los tres deben
+// cambiar juntos. Literal a proposito: Tailwind v4 detecta clases escaneando
+// el archivo como texto, no evaluando JS, asi que un template string
+// interpolado no generaria la utilidad h-[72px].
 const ALTO_BARRA_PX = 72;
 const ALTO_BARRA = "h-[72px]";
 
@@ -40,16 +41,14 @@ function EnlacesNav({ className, onEnlaceClick }: { className: string; onEnlaceC
 export function SiteHeader({
   variante,
   titulo,
-  imagenesFondo = [],
 }: {
   variante?: "inicio";
   titulo?: string;
-  imagenesFondo?: ImagenSlide[];
 }) {
   const [menuAbierto, setMenuAbierto] = useState(false);
   const [opacidadBarra, setOpacidadBarra] = useState(0);
-  const [indice, setIndice] = useState(0);
   const { resolvedTheme, setTheme } = useTheme();
+  const { data: session, status: estadoSesion } = useSession();
   const [montado, setMontado] = useState(false);
   const heroRef = useRef<HTMLElement>(null);
 
@@ -62,22 +61,10 @@ export function SiteHeader({
 
   const esInicio = variante === "inicio";
 
-  // Avanza el slideshow de fondo. INTERVALO_MS tambien maneja la duracion
-  // del aro que se llena en IndicadoresSlide, para que queden sincronizados.
-  useEffect(() => {
-    if (!esInicio || imagenesFondo.length < 2) return;
-    const id = setInterval(() => {
-      setIndice((i) => (i + 1) % imagenesFondo.length);
-    }, INTERVALO_MS);
-    return () => clearInterval(id);
-  }, [esInicio, imagenesFondo.length]);
-
-  // Fondo de la barra en 0 mientras se vea aunque sea un pedacito del
-  // header; recien cuando el hero termina de salir de pantalla del todo
-  // (su borde inferior pasa bajo la barra fija) salta a 1 de un saque, y
-  // es la transition-opacity de mas abajo la que convierte ese salto en
-  // un fade-in suave. No es una interpolacion continua por cada pixel de
-  // scroll: es un interruptor con una transicion CSS encima.
+  // Fondo amarillo de la barra en 0 mientras se vea el hero; recien cuando
+  // este termina de salir de pantalla del todo (su borde inferior pasa bajo
+  // la barra fija, o sea que el div siguiente ya llego completo arriba)
+  // salta a 1, y motion.div convierte ese salto en un fade suave.
   useEffect(() => {
     if (!esInicio) return;
     const hero = heroRef.current;
@@ -99,10 +86,12 @@ export function SiteHeader({
   return (
     <>
       <header className="fixed inset-x-0 top-0 z-50">
-        <div
+        <motion.div
           aria-hidden
-          className="absolute inset-0 -z-10 bg-amarillo shadow-lg transition-opacity duration-700 ease-in motion-reduce:transition-none"
-          style={esInicio ? { opacity: menuAbierto ? 1 : opacidadBarra } : undefined}
+          className="absolute inset-0 -z-10 bg-amarillo shadow-lg"
+          initial={false}
+          animate={{ opacity: esInicio ? (menuAbierto ? 1 : opacidadBarra) : 1 }}
+          transition={{ duration: 0.7, ease: "easeIn" }}
         />
 
         <div className={"relative contenedor flex items-center justify-between gap-4 " + ALTO_BARRA}>
@@ -128,6 +117,15 @@ export function SiteHeader({
 
             <EnlacesNav className="hidden md:flex md:items-center md:gap-8" onEnlaceClick={() => setMenuAbierto(false)} />
 
+            {/* Mientras useSession() resuelve (fetch a /api/auth/session sin
+                sesion precargada desde el servidor), no mostrar "Iniciar
+                sesion" de entrada: parpadearia mal para un admin ya logueado. */}
+            {estadoSesion !== "loading" && (
+              <Link href={session ? "/admin" : "/admin/login"} className="boton-verde mt-0">
+                {session ? "Panel" : "Iniciar sesión"}
+              </Link>
+            )}
+
             <button
               type="button"
               className="md:hidden"
@@ -152,21 +150,12 @@ export function SiteHeader({
       {esInicio ? (
         <section
           ref={heroRef}
-          className="relative overflow-hidden bg-gris-oscuro bg-cover bg-center pt-[72px] md:min-h-[700px]"
-          style={imagenesFondo.length === 0 ? { backgroundImage: "url(/img/header.jpg)" } : undefined}
+          className="relative bg-gris-oscuro bg-cover bg-center pt-[72px] md:min-h-[700px]"
+          style={{ backgroundImage: "url(/img/header.jpg)" }}
         >
-          {imagenesFondo.length > 0 && <FondoSlideshow imagenes={imagenesFondo} indice={indice} />}
-          {imagenesFondo.length > 1 && <IndicadoresSlide total={imagenesFondo.length} indice={indice} />}
-
           <div className="relative z-10 contenedor flex flex-col items-center justify-center pb-8 md:min-h-[700px]">
             {titulo && (
               <h1 className="mt-8 max-w-[600px] text-center font-bold text-blanco text-h1">{titulo}</h1>
-            )}
-
-            {imagenesFondo.length > 0 && (
-              <Link href={`/anuncios/${imagenesFondo[indice].id}`} className="boton-amarillo">
-                Ver Propiedad
-              </Link>
             )}
           </div>
         </section>

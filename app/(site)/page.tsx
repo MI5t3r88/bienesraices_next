@@ -1,6 +1,6 @@
 import Image from "next/image";
 import Link from "next/link";
-import { SiteHeader, ID_SECCION_NOSOTROS } from "@/components/SiteHeader";
+import { SiteHeader } from "@/components/SiteHeader";
 import { TarjetaAnuncio } from "@/components/TarjetaAnuncio";
 import { EntradaBlogCard } from "@/components/EntradaBlogCard";
 import { prisma } from "@/lib/prisma";
@@ -34,9 +34,17 @@ export default async function InicioPage() {
 
   return (
     <>
-      <SiteHeader variante="inicio" titulo="Venta de Casas y Departamentos Exclusivos de Lujo" />
+      <SiteHeader
+        variante="inicio"
+        titulo="Venta de Casas y Departamentos Exclusivos de Lujo"
+        imagenesFondo={propiedades.map((propiedad) => ({
+          id: propiedad.id,
+          src: propiedad.imagen,
+          alt: propiedad.titulo,
+        }))}
+      />
 
-      <div id={ID_SECCION_NOSOTROS} className="contenedor py-separacion">
+      <div className="contenedor py-separacion">
         <h1 className="text-h1">Mas Sobre Nosotros</h1>
 
         <div className="md:grid md:grid-cols-3 md:gap-8">

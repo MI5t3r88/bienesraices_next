@@ -2,7 +2,8 @@
 
 import Link from "next/link";
 import { useTheme } from "next-themes";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import { FondoSlideshow, IndicadoresSlide, INTERVALO_MS, type ImagenSlide } from "@/components/FondoSlideshow";
 
 const enlaces = [
   { href: "/nosotros", label: "Nosotros" },
@@ -18,11 +19,6 @@ const enlaces = [
 // que un template string interpolado no generaria la utilidad h-[72px].
 const ALTO_BARRA_PX = 72;
 const ALTO_BARRA = "h-[72px]";
-
-// El bloque "Mas Sobre Nosotros" vive en app/(site)/page.tsx, fuera de
-// este componente: se ubica por id en vez de por ref porque no hay
-// forma de pasar un ref entre arboles de componentes hermanos.
-export const ID_SECCION_NOSOTROS = "seccion-mas-sobre-nosotros";
 
 function EnlacesNav({ className, onEnlaceClick }: { className: string; onEnlaceClick: () => void }) {
   return (
@@ -44,14 +40,18 @@ function EnlacesNav({ className, onEnlaceClick }: { className: string; onEnlaceC
 export function SiteHeader({
   variante,
   titulo,
+  imagenesFondo = [],
 }: {
   variante?: "inicio";
   titulo?: string;
+  imagenesFondo?: ImagenSlide[];
 }) {
   const [menuAbierto, setMenuAbierto] = useState(false);
-  const [desplazado, setDesplazado] = useState(false);
+  const [opacidadBarra, setOpacidadBarra] = useState(0);
+  const [indice, setIndice] = useState(0);
   const { resolvedTheme, setTheme } = useTheme();
   const [montado, setMontado] = useState(false);
+  const heroRef = useRef<HTMLElement>(null);
 
   // Patron recomendado por next-themes para evitar mismatch de hidratacion:
   // el icono de tema solo puede pintarse una vez el cliente sabe el tema real.
@@ -62,37 +62,50 @@ export function SiteHeader({
 
   const esInicio = variante === "inicio";
 
-  // Solo en el inicio la barra arranca transparente sobre el hero: gana
-  // fondo cuando su borde inferior alcanza el bloque "Mas Sobre Nosotros"
-  // (no con un umbral fijo de scroll, para que quede alineada con esa
-  // seccion sin importar la altura real del hero en cada viewport).
+  // Avanza el slideshow de fondo. INTERVALO_MS tambien maneja la duracion
+  // del aro que se llena en IndicadoresSlide, para que queden sincronizados.
+  useEffect(() => {
+    if (!esInicio || imagenesFondo.length < 2) return;
+    const id = setInterval(() => {
+      setIndice((i) => (i + 1) % imagenesFondo.length);
+    }, INTERVALO_MS);
+    return () => clearInterval(id);
+  }, [esInicio, imagenesFondo.length]);
+
+  // Fondo de la barra en 0 mientras se vea aunque sea un pedacito del
+  // header; recien cuando el hero termina de salir de pantalla del todo
+  // (su borde inferior pasa bajo la barra fija) salta a 1 de un saque, y
+  // es la transition-opacity de mas abajo la que convierte ese salto en
+  // un fade-in suave. No es una interpolacion continua por cada pixel de
+  // scroll: es un interruptor con una transicion CSS encima.
   useEffect(() => {
     if (!esInicio) return;
+    const hero = heroRef.current;
+    if (!hero) return;
 
-    const seccion = document.getElementById(ID_SECCION_NOSOTROS);
-    if (!seccion) return;
+    const recalcular = () => {
+      setOpacidadBarra(hero.getBoundingClientRect().bottom <= ALTO_BARRA_PX ? 1 : 0);
+    };
 
-    const alDesplazar = () => setDesplazado(seccion.getBoundingClientRect().top <= ALTO_BARRA_PX);
-    alDesplazar(); // estado correcto si se recarga a media pagina
-    window.addEventListener("scroll", alDesplazar, { passive: true });
-    return () => window.removeEventListener("scroll", alDesplazar);
+    recalcular();
+    window.addEventListener("scroll", recalcular, { passive: true });
+    window.addEventListener("resize", recalcular);
+    return () => {
+      window.removeEventListener("scroll", recalcular);
+      window.removeEventListener("resize", recalcular);
+    };
   }, [esInicio]);
-
-  // Con el menu movil desplegado, la barra necesita fondo aunque no haya
-  // llegado a la seccion: si no, los enlaces quedan flotando sobre
-  // contenido claro. Fuera del inicio no hay hero que tapar, asi que la
-  // barra es solida desde el primer render (sin depender de scroll).
-  const barraSolida = !esInicio || desplazado || menuAbierto;
 
   return (
     <>
-      <header
-        className={
-          "fixed inset-x-0 top-0 z-50 transition-[background-color,box-shadow] duration-300 ease-in motion-reduce:transition-none " +
-          (barraSolida ? "bg-amarillo shadow-lg" : "bg-transparent")
-        }
-      >
-        <div className={"contenedor flex items-center justify-between gap-4 " + ALTO_BARRA}>
+      <header className="fixed inset-x-0 top-0 z-50">
+        <div
+          aria-hidden
+          className="absolute inset-0 -z-10 bg-amarillo shadow-lg transition-opacity duration-700 ease-in motion-reduce:transition-none"
+          style={esInicio ? { opacity: menuAbierto ? 1 : opacidadBarra } : undefined}
+        />
+
+        <div className={"relative contenedor flex items-center justify-between gap-4 " + ALTO_BARRA}>
           <Link href="/" className="shrink-0">
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img src="/img/logo.svg" alt="Logotipo de Bienes Raices" className="h-10 w-auto" />
@@ -130,7 +143,7 @@ export function SiteHeader({
 
         {menuAbierto && (
           <EnlacesNav
-            className="contenedor flex flex-col items-center gap-3 pb-4 md:hidden"
+            className="relative contenedor flex flex-col items-center gap-3 pb-4 md:hidden"
             onEnlaceClick={() => setMenuAbierto(false)}
           />
         )}
@@ -138,12 +151,22 @@ export function SiteHeader({
 
       {esInicio ? (
         <section
-          className="relative bg-gris-oscuro bg-cover bg-center pt-[72px] md:min-h-[700px]"
-          style={{ backgroundImage: "url(/img/header.jpg)" }}
+          ref={heroRef}
+          className="relative overflow-hidden bg-gris-oscuro bg-cover bg-center pt-[72px] md:min-h-[700px]"
+          style={imagenesFondo.length === 0 ? { backgroundImage: "url(/img/header.jpg)" } : undefined}
         >
-          <div className="contenedor flex flex-col justify-end pb-8 md:min-h-[700px]">
+          {imagenesFondo.length > 0 && <FondoSlideshow imagenes={imagenesFondo} indice={indice} />}
+          {imagenesFondo.length > 1 && <IndicadoresSlide total={imagenesFondo.length} indice={indice} />}
+
+          <div className="relative z-10 contenedor flex flex-col items-center justify-center pb-8 md:min-h-[700px]">
             {titulo && (
-              <h1 className="mt-8 max-w-[600px] text-left font-bold text-blanco text-h1">{titulo}</h1>
+              <h1 className="mt-8 max-w-[600px] text-center font-bold text-blanco text-h1">{titulo}</h1>
+            )}
+
+            {imagenesFondo.length > 0 && (
+              <Link href={`/anuncios/${imagenesFondo[indice].id}`} className="boton-amarillo">
+                Ver Propiedad
+              </Link>
             )}
           </div>
         </section>

@@ -34,7 +34,7 @@ export default function NosotrosPage() {
       <SiteHeader />
 
       <main className="contenedor py-separacion">
-        <h1 className="text-h1">Conoce sobre Nosotros</h1>
+        <h1 className="text-h1 pb-12">Conoce sobre Nosotros</h1>
 
         <div className="md:grid md:grid-cols-2 md:gap-8">
           <div className="relative aspect-video w-full">
@@ -69,14 +69,14 @@ export default function NosotrosPage() {
       </main>
 
       <section className="contenedor pb-separacion">
-        <h1 className="text-h1">Mas Sobre Nosotros</h1>
+        <h1 className="text-h1 pb-12">Mas Sobre Nosotros</h1>
 
         <div className="md:grid md:grid-cols-3 md:gap-8">
           {iconos.map((icono) => (
             <div key={icono.titulo} className="text-center">
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img src={icono.src} alt={`Icono ${icono.titulo}`} loading="lazy" className="mx-auto h-40" />
-              <h3 className="text-h3 uppercase">{icono.titulo}</h3>
+              <h3 className=" text-h3 uppercase">{icono.titulo}</h3>
               <p>{icono.texto}</p>
             </div>
           ))}

@@ -18,9 +18,13 @@ function BotonEnviar() {
   );
 }
 
-function Error({ texto }: { texto?: string }) {
+function Error({ campo, texto }: { campo: string; texto?: string }) {
   if (!texto) return null;
-  return <p className="mt-1 text-sm font-bold text-red-600">{texto}</p>;
+  return (
+    <p id={`${campo}-error`} className="mt-1 text-sm font-bold text-red-600">
+      {texto}
+    </p>
+  );
 }
 
 export function FormularioContacto() {
@@ -46,38 +50,82 @@ export function FormularioContacto() {
         <legend>Informacion Personal</legend>
 
         <label htmlFor="nombre">Nombre</label>
-        <input type="text" name="nombre" id="nombre" placeholder="Tu Nombre" required />
-        <Error texto={estado.errores?.nombre} />
+        <input
+          type="text"
+          name="nombre"
+          id="nombre"
+          placeholder="Tu Nombre"
+          required
+          aria-invalid={!!estado.errores?.nombre}
+          aria-describedby={estado.errores?.nombre ? "nombre-error" : undefined}
+        />
+        <Error campo="nombre" texto={estado.errores?.nombre} />
 
         <label htmlFor="email">E-mail</label>
-        <input type="email" name="email" id="email" placeholder="Tu Email" required />
-        <Error texto={estado.errores?.email} />
+        <input
+          type="email"
+          name="email"
+          id="email"
+          placeholder="Tu Email"
+          required
+          aria-invalid={!!estado.errores?.email}
+          aria-describedby={estado.errores?.email ? "email-error" : undefined}
+        />
+        <Error campo="email" texto={estado.errores?.email} />
 
         <label htmlFor="telefono">Telefono</label>
-        <input type="tel" name="telefono" id="telefono" placeholder="Tu Telefono" required />
-        <Error texto={estado.errores?.telefono} />
+        <input
+          type="tel"
+          name="telefono"
+          id="telefono"
+          placeholder="Tu Telefono"
+          required
+          aria-invalid={!!estado.errores?.telefono}
+          aria-describedby={estado.errores?.telefono ? "telefono-error" : undefined}
+        />
+        <Error campo="telefono" texto={estado.errores?.telefono} />
 
         <label htmlFor="mensaje">Mensaje:</label>
-        <textarea name="mensaje" id="mensaje" required />
-        <Error texto={estado.errores?.mensaje} />
+        <textarea
+          name="mensaje"
+          id="mensaje"
+          required
+          aria-invalid={!!estado.errores?.mensaje}
+          aria-describedby={estado.errores?.mensaje ? "mensaje-error" : undefined}
+        />
+        <Error campo="mensaje" texto={estado.errores?.mensaje} />
       </fieldset>
 
       <fieldset>
         <legend>Informacion sobre la propiedad</legend>
 
         <label htmlFor="tipo">Vende o Compra:</label>
-        <select name="tipo" id="tipo" defaultValue="" required>
+        <select
+          name="tipo"
+          id="tipo"
+          defaultValue=""
+          required
+          aria-invalid={!!estado.errores?.tipo}
+          aria-describedby={estado.errores?.tipo ? "tipo-error" : undefined}
+        >
           <option value="" disabled>
             -- Seleccione --
           </option>
           <option value="Compra">Compra</option>
           <option value="Vende">Vende</option>
         </select>
-        <Error texto={estado.errores?.tipo} />
+        <Error campo="tipo" texto={estado.errores?.tipo} />
 
         <label htmlFor="presupuesto">Precio o Presupuesto</label>
-        <input type="number" name="presupuesto" id="presupuesto" placeholder="Tu Precio o Presupuesto" />
-        <Error texto={estado.errores?.presupuesto} />
+        <input
+          type="number"
+          name="presupuesto"
+          id="presupuesto"
+          placeholder="Tu Precio o Presupuesto"
+          aria-invalid={!!estado.errores?.presupuesto}
+          aria-describedby={estado.errores?.presupuesto ? "presupuesto-error" : undefined}
+        />
+        <Error campo="presupuesto" texto={estado.errores?.presupuesto} />
       </fieldset>
 
       <fieldset>
@@ -98,7 +146,7 @@ export function FormularioContacto() {
           <label htmlFor="contactar-email">E-mail</label>
           <input name="preferenciaContacto" type="radio" value="email" id="contactar-email" />
         </div>
-        <Error texto={estado.errores?.preferenciaContacto} />
+        <Error campo="preferenciaContacto" texto={estado.errores?.preferenciaContacto} />
 
         <p>Si eligio telefono, elija la fecha y la hora</p>
 

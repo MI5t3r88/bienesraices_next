@@ -19,7 +19,7 @@ export default async function BlogPage() {
       <SiteHeader />
 
       <main className="contenedor max-w-[800px] py-separacion">
-        <h1 className="text-h1">Nuestro Blog</h1>
+        <h1 className=" pb-12 text-h1">Nuestro Blog</h1>
 
         {entradas.map((entrada) => (
           <EntradaBlogCard key={entrada.id} entrada={entrada} />

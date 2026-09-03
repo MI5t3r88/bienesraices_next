@@ -1,3 +1,4 @@
+import { cache } from "react";
 import Image from "next/image";
 import { notFound } from "next/navigation";
 import type { Metadata } from "next";
@@ -8,9 +9,15 @@ import { prisma } from "@/lib/prisma";
 
 type Params = Promise<{ id: string }>;
 
+// cache() deduplica esta consulta dentro del mismo request: generateMetadata
+// y el componente de pagina se ejecutan por separado y ambos la necesitan.
+const obtenerPropiedad = cache((id: string) =>
+  prisma.propiedad.findUnique({ where: { id }, include: { vendedor: true } })
+);
+
 export async function generateMetadata({ params }: { params: Params }): Promise<Metadata> {
   const { id } = await params;
-  const propiedad = await prisma.propiedad.findUnique({ where: { id } });
+  const propiedad = await obtenerPropiedad(id);
 
   if (!propiedad) return { title: "Propiedad no encontrada" };
 
@@ -22,10 +29,7 @@ export async function generateMetadata({ params }: { params: Params }): Promise<
 
 export default async function AnuncioPage({ params }: { params: Params }) {
   const { id } = await params;
-  const propiedad = await prisma.propiedad.findUnique({
-    where: { id },
-    include: { vendedor: true },
-  });
+  const propiedad = await obtenerPropiedad(id);
 
   if (!propiedad) notFound();
 

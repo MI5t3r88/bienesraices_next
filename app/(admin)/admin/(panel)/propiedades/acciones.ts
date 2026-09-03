@@ -4,7 +4,8 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { propiedadSchema } from "@/lib/validaciones";
-import { guardarImagen } from "@/lib/almacenamiento";
+import { guardarImagen, borrarImagen, ImagenInvalidaError } from "@/lib/almacenamiento";
+import { exigirSesion } from "@/lib/auth";
 
 export type EstadoPropiedad = {
   success: boolean;
@@ -31,7 +32,17 @@ async function procesarFormulario(formData: FormData): Promise<
   const archivo = formData.get("imagen");
   let imagen: string | undefined;
   if (archivo instanceof File && archivo.size > 0) {
-    imagen = await guardarImagen(archivo);
+    try {
+      imagen = await guardarImagen(archivo);
+    } catch (error) {
+      if (error instanceof ImagenInvalidaError) {
+        return {
+          ok: false,
+          estado: { success: false, errores: { imagen: error.message }, message: "Revisa los campos marcados." },
+        };
+      }
+      throw error;
+    }
   }
 
   return { ok: true, datos: resultado.data, imagen };
@@ -41,6 +52,8 @@ export async function crearPropiedad(
   _estadoPrevio: EstadoPropiedad,
   formData: FormData
 ): Promise<EstadoPropiedad> {
+  await exigirSesion();
+
   const resultado = await procesarFormulario(formData);
   if (!resultado.ok) return resultado.estado;
 
@@ -52,12 +65,23 @@ export async function crearPropiedad(
     };
   }
 
-  const propiedad = await prisma.propiedad.create({
-    data: { ...resultado.datos, imagen: resultado.imagen },
-  });
+  let propiedad;
+  try {
+    propiedad = await prisma.propiedad.create({
+      data: { ...resultado.datos, imagen: resultado.imagen },
+    });
+  } catch (error) {
+    // La imagen ya se escribio a disco antes del create; si la escritura
+    // en base de datos falla (ej. vendedorId invalido) no debe quedar
+    // huerfana en public/uploads.
+    await borrarImagen(resultado.imagen);
+    throw error;
+  }
 
+  revalidatePath("/");
   revalidatePath("/admin");
   revalidatePath("/anuncios");
+  revalidatePath("/sitemap.xml");
   redirect(`/admin/propiedades/${propiedad.id}/editar?creada=1`);
 }
 
@@ -66,27 +90,53 @@ export async function actualizarPropiedad(
   _estadoPrevio: EstadoPropiedad,
   formData: FormData
 ): Promise<EstadoPropiedad> {
+  await exigirSesion();
+
   const resultado = await procesarFormulario(formData);
   if (!resultado.ok) return resultado.estado;
 
-  await prisma.propiedad.update({
-    where: { id },
-    data: {
-      ...resultado.datos,
-      ...(resultado.imagen ? { imagen: resultado.imagen } : {}),
-    },
-  });
+  const anterior = await prisma.propiedad.findUnique({ where: { id }, select: { imagen: true } });
 
+  try {
+    await prisma.propiedad.update({
+      where: { id },
+      data: {
+        ...resultado.datos,
+        ...(resultado.imagen ? { imagen: resultado.imagen } : {}),
+      },
+    });
+  } catch (error) {
+    // La imagen nueva (si se subio) ya esta en disco; el update fallo,
+    // asi que la propiedad se quedo con la imagen anterior y esta no
+    // debe quedar huerfana en public/uploads.
+    if (resultado.imagen) await borrarImagen(resultado.imagen);
+    throw error;
+  }
+
+  if (resultado.imagen && anterior) {
+    await borrarImagen(anterior.imagen);
+  }
+
+  revalidatePath("/");
   revalidatePath("/admin");
   revalidatePath("/anuncios");
   revalidatePath(`/anuncios/${id}`);
+  revalidatePath(`/admin/propiedades/${id}/editar`);
+  revalidatePath("/sitemap.xml");
 
   return { success: true, message: "Propiedad actualizada." };
 }
 
 export async function borrarPropiedad(id: string) {
-  await prisma.propiedad.delete({ where: { id } });
+  await exigirSesion();
+
+  const propiedad = await prisma.propiedad.delete({ where: { id } });
+  await borrarImagen(propiedad.imagen);
+
+  revalidatePath("/");
   revalidatePath("/admin");
   revalidatePath("/anuncios");
+  revalidatePath(`/anuncios/${id}`);
+  revalidatePath("/sitemap.xml");
   redirect("/admin");
 }

@@ -1,6 +1,14 @@
 @import "tailwindcss";
 
 /*
+  Tailwind v4 define `dark:` por defecto como @media (prefers-color-scheme:
+  dark), ignorando la clase que escribe next-themes en <html>. Esta linea
+  cambia la variante para que escuche la clase .dark en vez del sistema
+  operativo, que es como la usa el resto de este archivo y los componentes.
+*/
+@custom-variant dark (&:where(.dark, .dark *));
+
+/*
   Proyecto viejo fija html{font-size:62.5%} => 1rem = 10px.
   Aqui NO se replica ese truco: cada valor ya viene convertido a px
   directo desde src/scss/base/_variables.scss del proyecto original.
@@ -54,7 +62,7 @@
   }
 
   body {
-    @apply bg-blanco text-negro dark:bg-gris-profundo;
+    @apply bg-blanco text-negro dark:bg-gris-profundo dark:text-gris;
     font-family: var(--font-sans);
     font-size: 16px;
     line-height: 1.8;
@@ -74,7 +82,7 @@
   h2,
   h3,
   h4 {
-    @apply dark:text-gris;
+    @apply dark:text-gris pb-[12px];
   }
   h1,
   h2,

@@ -1,15 +1,31 @@
 import type { Metadata } from "next";
 import { prisma } from "@/lib/prisma";
 import { formatearFecha } from "@/lib/formato";
+import { Paginacion } from "@/components/Paginacion";
 
 export const metadata: Metadata = { title: "Mensajes" };
 
-export default async function MensajesPage() {
-  const mensajes = await prisma.mensaje.findMany({ orderBy: { creado: "desc" } });
+const POR_PAGINA = 20;
+
+type SearchParams = Promise<{ pagina?: string }>;
+
+export default async function MensajesPage({ searchParams }: { searchParams: SearchParams }) {
+  const { pagina } = await searchParams;
+  const paginaActual = Math.max(1, Number(pagina) || 1);
+
+  const [mensajes, total] = await Promise.all([
+    prisma.mensaje.findMany({
+      orderBy: { creado: "desc" },
+      skip: (paginaActual - 1) * POR_PAGINA,
+      take: POR_PAGINA,
+    }),
+    prisma.mensaje.count(),
+  ]);
+  const totalPaginas = Math.max(1, Math.ceil(total / POR_PAGINA));
 
   return (
     <div>
-      <h1 className="text-h2">Mensajes de Contacto ({mensajes.length})</h1>
+      <h1 className="text-h2">Mensajes de Contacto ({total})</h1>
 
       <div className="flex flex-col gap-4">
         {mensajes.map((mensaje) => (
@@ -38,6 +54,8 @@ export default async function MensajesPage() {
 
         {mensajes.length === 0 && <p>Todavia no hay mensajes de contacto.</p>}
       </div>
+
+      <Paginacion basePath="/admin/mensajes" paginaActual={paginaActual} totalPaginas={totalPaginas} />
     </div>
   );
 }

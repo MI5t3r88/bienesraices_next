@@ -20,7 +20,7 @@ export function TarjetaAnuncio({ propiedad }: { propiedad: Propiedad }) {
 
       <div className="p-8">
         <h3 className="m-0 text-h3">{propiedad.titulo}</h3>
-        <p className="m-0">{propiedad.descripcion}</p>
+        <p className="m-0 line-clamp-3">{propiedad.descripcion}</p>
         <p className="m-0 text-h3 font-bold text-verde">
           {formatearPrecio(propiedad.precio)}
         </p>

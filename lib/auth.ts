@@ -4,6 +4,21 @@ import bcrypt from "bcryptjs";
 import { prisma } from "@/lib/prisma";
 import { authConfig } from "@/lib/auth.config";
 
+/**
+ * El middleware solo protege /admin/*, pero un Server Action es un
+ * endpoint POST identificable por su Action ID que puede invocarse
+ * contra cualquier ruta (el matcher del middleware no aplica ahi).
+ * Llamar esto como primera linea de cada Server Action que mute datos
+ * del panel, para no depender solo de la proteccion de la ruta.
+ */
+export async function exigirSesion() {
+  const session = await auth();
+  if (!session) {
+    throw new Error("No autorizado");
+  }
+  return session;
+}
+
 export const { handlers, signIn, signOut, auth } = NextAuth({
   ...authConfig,
   providers: [

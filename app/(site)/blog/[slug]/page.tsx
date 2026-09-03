@@ -9,7 +9,7 @@ type Params = Promise<{ slug: string }>;
 
 export async function generateMetadata({ params }: { params: Params }): Promise<Metadata> {
   const { slug } = await params;
-  const entrada = await prisma.entrada.findUnique({ where: { slug } });
+  const entrada = await prisma.entrada.findUnique({ where: { slug, publicado: true } });
 
   if (!entrada) return { title: "Entrada no encontrada" };
 
@@ -21,7 +21,7 @@ export async function generateMetadata({ params }: { params: Params }): Promise<
 
 export default async function EntradaPage({ params }: { params: Params }) {
   const { slug } = await params;
-  const entrada = await prisma.entrada.findUnique({ where: { slug } });
+  const entrada = await prisma.entrada.findUnique({ where: { slug, publicado: true } });
 
   if (!entrada) notFound();
 
